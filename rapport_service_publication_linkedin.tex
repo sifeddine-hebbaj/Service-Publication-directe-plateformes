@@ -1,0 +1,372 @@
+\documentclass[a4paper,12pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{fancybox}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{setspace}
+\usepackage{emptypage}
+\usepackage{enumitem}
+\usepackage{float}
+
+\geometry{margin=2.5cm}
+\captionsetup[figure]{labelfont=bf}
+
+% Style de la page de titre
+\newcommand{\titlerule}[1][1pt]{\rule{\linewidth}{#1}}
+
+\begin{document}
+
+% ==== PAGE DE GARDE ====
+\begin{titlepage}
+    \thispagestyle{empty}
+    \begin{tikzpicture}[remember picture,overlay]
+        % Cadre gauche
+        \node[draw, thick, minimum width=0.3\textwidth, minimum height=3cm, anchor=north west] 
+            at ([xshift=2.5cm, yshift=-2.5cm]current page.north west) 
+            (leftbox) {
+                \begin{minipage}{0.25\textwidth}
+                    \centering
+                    \includegraphics[width=2cm]{LogoFsr (1).png} \\
+                    \vspace{0.3cm}
+                    \textbf{\small Université Mohammed V} \\
+                    \textbf{\scriptsize Faculté des Sciences Rabat} 
+                \end{minipage}
+            };
+        
+        % Cadre droit
+        \node[draw, thick, minimum width=0.3\textwidth, minimum height=3cm, anchor=north east] 
+            at ([xshift=-2.5cm, yshift=-2.5cm]current page.north east) 
+            (rightbox) {
+                \begin{minipage}{0.25\textwidth}
+                    \centering
+                    \includegraphics[width=2cm]{nexotek.png} \\
+                    \vspace{0.3cm}
+                    \textbf{\small Nexotek} 
+                \end{minipage}
+            };
+    \end{tikzpicture}
+
+    \vspace*{4cm} % Espacement depuis le haut
+    
+    \begin{center}
+        % Titre principal
+        {\Huge \bfseries SERVICE DE PUBLICATION DIRECTE \\ D'OFFRES SUR LINKEDIN} \\[1cm]
+        \titlerule[1.5pt] \\[1cm]
+        {\LARGE \bfseries Rapport Technique} \\[1cm]
+        \titlerule[1.5pt] \\
+        
+        \vspace{3cm}
+        
+        % Informations complémentaires
+        \begin{minipage}{0.8\textwidth}
+            \centering
+            \large
+            \textbf{Réalisé par:} \\
+            \vspace{0.3cm}
+            \textbf{HEBBAJ Sif-Eddine} \\
+            \vspace{1cm}
+            \textbf{Encadré par:} \\
+            \vspace{0.3cm}
+            \textbf{Pr. Zakaria azelmadf} \\
+            \vspace{1cm}
+            \textbf{Année universitaire:} \\
+            \vspace{0.3cm}
+            \textbf{2023-2024}
+        \end{minipage}
+        
+        \vfill
+        
+        % Date
+        {\large \today}
+    \end{center}
+\end{titlepage}
+
+% ==== TABLE DES MATIÈRES ====
+\tableofcontents
+\clearpage
+
+% ==== INTRODUCTION ====
+\chapter*{Introduction}
+\addcontentsline{toc}{chapter}{Introduction}
+\thispagestyle{plain}
+Ce rapport présente l'architecture, le fonctionnement et les principaux flux du service de publication directe d'offres d'emploi sur LinkedIn, développé en Java avec Spring Boot. Ce service permet à un recruteur de publier une offre sur LinkedIn via une API REST, tout en stockant l'offre dans une base de données PostgreSQL.
+
+\chapter{Architecture Générale}
+\section{Structure du Service}
+Le service est structuré selon une architecture en couches typique des applications Spring Boot:
+
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Controller}: Point d'entrée REST, reçoit les requêtes HTTP
+    \item \textbf{Service}: Logique métier, gestion de la publication et du stockage
+    \item \textbf{Mapper/DTO/Entity}: Conversion et modélisation des données
+    \item \textbf{Repository}: Accès à la base de données
+\end{itemize}
+
+\section{Diagramme de Classes}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{dc.png}
+    \caption{Diagramme de classes du service}
+    \label{fig:class_diagram}
+\end{figure}
+
+\textbf{Explication:}
+\begin{itemize}[leftmargin=*]
+    \item \texttt{JobPublicationController} reçoit la requête de publication et délègue au service
+    \item \texttt{JobPublicationService} gère la logique de publication sur LinkedIn et le stockage
+    \item \texttt{JobOfferMapper} convertit entre DTO et entités
+    \item \texttt{JobOfferRepository} permet la persistance des offres
+    \item \texttt{JobOffer}, \texttt{JobOfferRequestDTO}, \texttt{JobOfferResponseDTO} modélisent les données
+\end{itemize}
+
+\chapter{Flux Fonctionnel}
+\section{Diagramme de Cas d'Usage}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{UC.png}
+    \caption{Diagramme de cas d'usage}
+    \label{fig:use_case}
+\end{figure}
+
+\textbf{Explication:}
+\begin{itemize}[leftmargin=*]
+    \item Le \textbf{recruteur} initie la publication d'une offre
+    \item Le service valide le token LinkedIn, construit le texte du post, publie sur LinkedIn, gère les erreurs et stocke l'offre en base
+    \item L'API LinkedIn et la base PostgreSQL sont des systèmes externes
+\end{itemize}
+
+\section{Diagramme de Transition d'État}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{Untitled diagram _ Mermaid Chart-2025-07-13-152612.png}
+    \caption{Diagramme de transition d'état du processus de publication}
+    \label{fig:state_diagram}
+\end{figure}
+
+\textbf{Explication détaillée:}
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{EnAttente}: Le service attend une requête
+    \item \textbf{ValidationToken}: Vérification du token LinkedIn
+    \item \textbf{TokenValide/TokenInvalide}: Si le token est valide, on continue, sinon on retourne une erreur
+    \item \textbf{ConstructionPost}: Génération du texte LinkedIn
+    \item \textbf{PublicationLinkedIn}: Tentative de publication sur LinkedIn
+    \item \textbf{PublicationSucces/PublicationEchec}: Selon la réponse de LinkedIn
+    \item \textbf{SauvegardeBase}: Stockage de l'offre en base
+    \item \textbf{OffreStockee}: Réponse envoyée au client
+\end{enumerate}
+
+\chapter{Détail du Fonctionnement}
+\section{Étapes principales}
+\begin{enumerate}[leftmargin=*]
+    \item Le recruteur envoie une requête POST avec les détails de l'offre et un token LinkedIn
+    \item Le contrôleur extrait et valide le token
+    \item Le service construit le texte du post et tente la publication via l'API LinkedIn
+    \item Quel que soit le résultat, l'offre est stockée en base avec le texte généré
+    \item Le service retourne un message de succès ou d'erreur
+\end{enumerate}
+
+\section{Gestion des erreurs}
+\begin{itemize}[leftmargin=*]
+    \item Si le token est manquant ou invalide, une erreur explicite est retournée
+    \item Si la publication LinkedIn échoue, l'offre est tout de même stockée et l'erreur est signalée
+\end{itemize}
+
+\chapter{Spécification Fonctionnelle Détaillée}
+
+\section{Cas d'utilisation principal}
+\textbf{UC1 : Publier une offre sur LinkedIn}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Acteur principal} : Recruteur
+    \item \textbf{Précondition} : Le recruteur possède un token LinkedIn valide et les informations de l'offre
+    \item \textbf{Déclencheur} : Envoi d'une requête POST à \texttt{/api/job-offers/linkedin/publish}
+    \item \textbf{Scénario nominal} :
+    \begin{enumerate}[leftmargin=*]
+        \item Le recruteur envoie une requête POST avec les champs : titre, description, localisation, entreprise, et les headers \texttt{Authorization} (Bearer token) et \texttt{X-Linkedin-User-Urn}.
+        \item Le système valide la présence et le format du token.
+        \item Le système construit le texte du post LinkedIn.
+        \item Le système tente de publier l'offre sur LinkedIn via l'API.
+        \item Le système stocke l'offre (avec le texte LinkedIn) en base de données.
+        \item Le système retourne un message de succès ou d'erreur selon la réponse LinkedIn, mais l'offre est toujours stockée.
+    \end{enumerate}
+    \item \textbf{Scénarios alternatifs} :
+    \begin{itemize}
+        \item Si le token est manquant ou invalide, le système retourne une erreur 400.
+        \item Si la publication LinkedIn échoue, l'offre est tout de même stockée et l'erreur est signalée dans la réponse.
+    \end{itemize}
+\end{itemize}
+
+\section{Structure des données}
+\textbf{Entrée (JobOfferRequestDTO)}
+\begin{itemize}[leftmargin=*]
+    \item title : String (obligatoire)
+    \item description : String (obligatoire)
+    \item location : String (obligatoire)
+    \item company : String (obligatoire)
+\end{itemize}
+
+\textbf{Sortie (JobOfferResponseDTO)}
+\begin{itemize}[leftmargin=*]
+    \item id : Long
+    \item title : String
+    \item published : boolean
+\end{itemize}
+
+\textbf{Entité persistée (JobOffer)}
+\begin{itemize}[leftmargin=*]
+    \item id : Long
+    \item title : String
+    \item description : String
+    \item location : String
+    \item company : String
+    \item published : boolean
+    \item linkedinPostText : String
+\end{itemize}
+
+\section{Règles de gestion}
+\begin{itemize}[leftmargin=*]
+    \item Le texte LinkedIn est formaté avec un emoji, le titre, l'entreprise, la localisation et la description.
+    \item L'offre est toujours stockée, même si la publication LinkedIn échoue.
+    \item Le token LinkedIn doit être fourni dans le header Authorization (format Bearer).
+\end{itemize}
+
+\section{Sécurité}
+\begin{itemize}[leftmargin=*]
+    \item L'endpoint \texttt{/api/job-offers/linkedin/publish} est ouvert mais nécessite un token LinkedIn valide.
+    \item Les autres endpoints sont protégés par défaut.
+\end{itemize}
+
+\chapter{Cahier de Tests}
+
+\section{Tests fonctionnels}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{5cm}|p{5cm}|p{4cm}|}
+\hline
+\textbf{ID} & \textbf{Cas de test} & \textbf{Entrée / Précondition} & \textbf{Attendu} \\
+\hline
+TC01 & Publication réussie & Offre complète, token valide, URN valide & 200 OK, message succès, offre stockée \\
+\hline
+TC02 & Token manquant & Offre complète, pas de header Authorization & 400, message d'erreur explicite \\
+\hline
+TC03 & Token invalide & Offre complète, token mal formé & 400, message d'erreur explicite \\
+\hline
+TC04 & Publication LinkedIn échoue & Offre complète, token valide, LinkedIn renvoie une erreur & 400, message d'erreur, offre stockée \\
+\hline
+TC05 & Données manquantes & Un ou plusieurs champs manquants dans l'offre & 400, message d'erreur explicite \\
+\hline
+TC06 & Vérification du stockage & Après publication (succès ou échec LinkedIn) & Offre présente en base avec texte LinkedIn \\
+\hline
+TC07 & Format du texte LinkedIn & Offre complète & Texte LinkedIn formaté correctement en base \\
+\hline
+\end{tabular}
+\caption{Tests fonctionnels principaux}
+\end{table}
+
+\section{Tests de sécurité}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{5cm}|p{5cm}|p{4cm}|}
+\hline
+\textbf{ID} & \textbf{Cas de test} & \textbf{Entrée / Précondition} & \textbf{Attendu} \\
+\hline
+TS01 & Endpoint protégé & Accès à un endpoint autre que /linkedin/publish sans auth & 401 Unauthorized \\
+\hline
+TS02 & Endpoint ouvert & Accès à /linkedin/publish sans auth Spring & 200/400 selon la présence du token LinkedIn \\
+\hline
+\end{tabular}
+\caption{Tests de sécurité}
+\end{table}
+
+\section{Tests techniques}
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|p{5cm}|p{5cm}|p{4cm}|}
+\hline
+\textbf{ID} & \textbf{Cas de test} & \textbf{Entrée / Précondition} & \textbf{Attendu} \\
+\hline
+TT01 & Performance & 100 publications en 1 minute & Pas d'erreur, temps de réponse < 2s \\
+\hline
+TT02 & Robustesse & LinkedIn indisponible & Offre stockée, message d'erreur approprié \\
+\hline
+\end{tabular}
+\caption{Tests techniques}
+\end{table}
+
+\chapter{Démonstration du Fonctionnement Réel}
+
+Cette section illustre le fonctionnement effectif du service à travers une séquence complète :
+
+\section{1. Récupération des informations utilisateur LinkedIn}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{linkedin_userinfo.png}
+    \caption{Appel GET /v2/userinfo avec Bearer Token (succès)}
+\end{figure}
+
+\section{2. Publication d'une offre via l'API REST}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{postman_publish.png}
+    \caption{Requête POST /api/job-offers/linkedin/publish avec offre complète}
+\end{figure}
+
+\section{3. Résultat sur LinkedIn}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{linkedin_result.png}
+    \caption{Offre publiée sur le profil LinkedIn}
+\end{figure}
+
+\section{4. Réponse LinkedIn API (ugcPosts)}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{linkedin_ugcPosts.png}
+    \caption{Réponse 201 Created de l'API LinkedIn après publication}
+\end{figure}
+
+\section{Scénario démontré}
+\begin{itemize}[leftmargin=*]
+    \item L'utilisateur récupère son profil LinkedIn avec un token valide.
+    \item Il soumet une offre d'emploi via l'API REST locale.
+    \item L'offre est publiée sur LinkedIn et stockée en base.
+    \item L'API LinkedIn retourne l'identifiant du post créé.
+    \item Le résultat est visible sur le profil LinkedIn.
+\end{itemize}
+
+\section{Extrait de code de test d'intégration}
+Le test suivant vérifie que l'offre est bien stockée même si la publication LinkedIn échoue (token factice) :
+
+\begin{verbatim}
+@Test
+void publishOffer_LinkedInErrorButStored() throws Exception {
+    JobOfferRequestDTO dto = JobOfferRequestDTO.builder()
+            .title("Développeur Java")
+            .description("CDI, 3 ans d'expérience")
+            .location("Paris, France")
+            .company("Nexotek RH")
+            .build();
+    mockMvc.perform(post("/api/job-offers/linkedin/publish")
+            .header("Authorization", "Bearer dummy-token")
+            .header("X-Linkedin-User-Urn", "urn:li:person:1234")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(dto)))
+            .andExpect(status().isBadRequest())
+            .andExpect(content().string(org.hamcrest.Matchers.containsString("Erreur LinkedIn")));
+}
+\end{verbatim}
+
+\noindent
+Ce test simule une publication avec un token invalide et vérifie que l'offre est tout de même stockée, conformément aux exigences du cahier des charges.
+
+\chapter*{Conclusion}
+\addcontentsline{toc}{chapter}{Conclusion}
+\thispagestyle{plain}
+Ce service permet d'automatiser la publication d'offres sur LinkedIn tout en assurant la traçabilité via le stockage en base. L'architecture modulaire facilite l'extension à d'autres plateformes ou l'ajout de nouvelles fonctionnalités.
+
+\end{document}

@@ -1,0 +1,62 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+# Cache Maven dependencies
+cache:
+  paths:
+    - .m2/repository/
+
+# Build stage
+build:
+  stage: build
+  image: maven:3.8.4-openjdk-11
+  script:
+    - mvn clean compile
+  artifacts:
+    paths:
+      - target/
+    expire_in: 1 hour
+
+# Test stage
+test:
+  stage: test
+  image: maven:3.8.4-openjdk-11
+  script:
+    - mvn test
+  dependencies:
+    - build
+
+# Deploy to ECS Fargate
+deploy:
+  stage: deploy
+  image: 
+    name: amazon/aws-cli:latest
+    entrypoint: [""]
+  before_script:
+    - aws --version
+    - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+    - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+    - aws configure set default.region $AWS_DEFAULT_REGION
+  script:
+    # Build Docker image
+    - docker build -t $ECR_REPOSITORY:$CI_COMMIT_SHA .
+    - docker tag $ECR_REPOSITORY:$CI_COMMIT_SHA $ECR_REPOSITORY:latest
+    
+    # Login to ECR
+    - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY
+    
+    # Push to ECR
+    - docker push $ECR_REPOSITORY:$CI_COMMIT_SHA
+    - docker push $ECR_REPOSITORY:latest
+    
+    # Update ECS Fargate service
+    - aws ecs update-service --cluster $ECS_CLUSTER_NAME --service $ECS_SERVICE_NAME --force-new-deployment
+  only:
+    - main
+  dependencies:
+    - build 
